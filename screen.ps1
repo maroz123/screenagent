@@ -19,6 +19,13 @@ Log "agent start bot=$([bool]$Config.BotToken) channel=$($Config.ChannelId)"
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Net.Http
+Add-Type -TypeDefinition @'
+using System.Runtime.InteropServices;
+public static class DpiAware {
+    [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+}
+'@
+[DpiAware]::SetProcessDPIAware() | Out-Null
 
 function Capture-Screen {
     $bounds = [System.Windows.Forms.SystemInformation]::VirtualScreen
