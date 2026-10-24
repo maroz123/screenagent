@@ -11,7 +11,7 @@ function Log([string]$Message) {
     '{0} {1}' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Message |
         Add-Content -Path $LogPath -ErrorAction SilentlyContinue
 }
-if (-not $Config.WebhookUrl -or $Config.WebhookUrl -eq '__WEBHOOK__') { Log 'not configured'; exit 1 }
+if (-not $Config.WebhookUrl -or $Config.WebhookUrl -match '__') { Log 'not configured'; exit 1 }
 
 Log "agent start bot=$([bool]$Config.BotToken) channel=$($Config.ChannelId)"
 
@@ -90,4 +90,4 @@ function Start-IntervalLoop {
     }
 }
 
-if ($Config.BotToken -and $Config.BotToken -ne '__TOKEN__' -and $Config.ChannelId) { Start-BotLoop } else { Start-IntervalLoop }
+if ($Config.BotToken -and $Config.ChannelId -and $Config.BotToken -notmatch '__') { Start-BotLoop } else { Start-IntervalLoop }
