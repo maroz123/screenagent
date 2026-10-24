@@ -18,6 +18,7 @@ Log "agent start bot=$([bool]$Config.BotToken) channel=$($Config.ChannelId)"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+Add-Type -AssemblyName System.Net.Http
 
 function Capture-Screen {
     $bounds = [System.Windows.Forms.SystemInformation]::VirtualScreen
